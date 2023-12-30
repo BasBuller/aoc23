@@ -1,4 +1,3 @@
-using Base: destructure_callex
 struct Map
     dest_source_length::Vector{Tuple{Int, Int, Int}}
 end
@@ -11,21 +10,40 @@ function get(mapf::Map, key::Int)
     end
     return key
 end
+const Range = Tuple{Int, Int}
+function get(mapf::Map, input_range::Range)::Vector{Range}
+    region_starts = sort([x[2] for x in mapf.dest_source_length])
+    subregions = []
+    start_val = input_range[1]
+    for region_start in region_starts
+        if (region_start > start_val) & (region_start <= input_range[2])
+            push!(subregions, (start_val, region_start - 1))
+            start_val = region_start
+        end
+    end
+    push!(subregions, (start_val, input_range[2]))
+
+    output_ranges = []
+    for (sub_start, sub_end) in subregions
+        push!(output_ranges, (get(mapf, sub_start), get(mapf, sub_end)))
+    end
+
+    return output_ranges
+end
+get(mapf::Map, input_ranges::Vector{Range})::Vector{Range} = reduce(vcat, [get(mapf, x) for x in input_ranges]; init=[])
 
 
 struct Almanac
     seeds::Vector{Int}
     maps::Vector{Map}
 end
-function get_location(almanac::Almanac, seed::Int)
+function get_location(almanac::Almanac, seed)
     res = seed
     for mapf in almanac.maps
         res = get(mapf, res)
     end
     return res
 end
-
-
 parse_ints(ints_str) = [parse(Int, x) for x in split(ints_str, " ")]
 function parse_map(map_str)
     map_lines = split(map_str, "\n")[2:end]
@@ -43,13 +61,17 @@ function parse_input(input::String)
 end
 
 
-function part1(input::String)
-    almanac = parse_input(input)
+function part1(almanac::Almanac)
     locations = []
     for seed in almanac.seeds
         push!(locations, get_location(almanac, seed))
     end
     return minimum(locations)
+end
+function part2(almanac::Almanac)
+    input_ranges = [(start, start + len) for (start, len) in Iterators.partition(almanac.seeds, 2)]
+    regions = get_location(almanac, input_ranges)
+    return minimum([x[1] for x in regions])
 end
 
 
@@ -87,7 +109,10 @@ temperature-to-humidity map:
 humidity-to-location map:
 60 56 37
 56 93 4"
-@show part1(test_input)
+test_almanac = parse_input(test_input)
+@show part1(test_almanac)
+@show part2(test_almanac)
+println()
 
 
 input = "seeds: 5844012 110899473 1132285750 58870036 986162929 109080640 3089574276 100113624 2693179996 275745330 2090752257 201704169 502075018 396653347 1540050181 277513792 1921754120 26668991 3836386950 66795009
@@ -262,5 +287,7 @@ humidity-to-location map:
 1109156887 4210612885 84354411
 4273894768 1155656956 21072528
 1232230400 1330301508 356414156"
-@show part1(input)
+almanac = parse_input(input)
+@show part1(almanac)
+@show part2(almanac)
 
