@@ -9,11 +9,11 @@ function parse_input(path::String)
 end
 
 
-distance(hold_duration::Int, race_duration::Int) = (race_duration - hold_duration) * hold_duration
 function winning_ways(time_dist::TimeDist)
     wins = 0
-    for hold in 1:time_dist[1]
-        if distance(hold, time_dist[1]) > time_dist[2]
+    for hold_duration in 1:time_dist[1]
+        distance = (time_dist[1] - hold_duration) * hold_duration
+        if distance > time_dist[2]
             wins += 1
         end
     end
